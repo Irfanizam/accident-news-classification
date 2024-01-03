@@ -1,0 +1,14 @@
+{
+    "label": {
+      "0": "unrelated",
+      "1": "related",
+      "2": "trafficinfo"
+    },
+    
+    "labels": {
+      "unrelated": 0,
+      "related": 1,
+      "trafficinfo": 2
+  
+  }
+}
