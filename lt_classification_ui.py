@@ -64,7 +64,7 @@ label_binarizer = LabelBinarizer()
 # pickle.dump(multi_output_classifier, open('lt_svm_model.pkl', 'wb'))
 
 loaded_model = pickle.load(open('lt_svm_model.pkl', 'rb'))
-print("LOADED MODEL")
+print("LONG TEXT LOADED MODEL")
 
 def predict(summary):
     input_data = [summary]

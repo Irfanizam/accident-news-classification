@@ -65,7 +65,7 @@ label_binarizer = LabelBinarizer()
 # pickle.dump(multi_output_classifier, open('st_svm_model.pkl', 'wb'))
 
 loaded_model = pickle.load(open('st_svm_model.pkl', 'rb'))
-print("LOADED MODEL")
+print("SHORT TEXT LOADED MODEL")
 def predict(tweet):
     print(tweet)
     input_data = [tweet]
@@ -158,6 +158,7 @@ def visualize_data(tweet):
     prediction = predict(tweet)
 
     return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
+
 # Update your Gradio interface
 st_demo = gr.Interface(
     fn=visualize_data,
@@ -166,13 +167,11 @@ st_demo = gr.Interface(
              gr.Image(type="pil", label="Word Cloud"),
              gr.Image(type="pil", label="Top 10 Words Bar Chart"),
              gr.components.Label(label="Text Predictions")],
-    allow_flagging='never'
+    allow_flagging='never',    
 )
 
 # upload = gr.UploadButton("Click to Upload a File", file_types=["file"])
 # inp_file=gr.components.File(label="Short Text")
-
-
 
 def download_df(file: pd.DataFrame, predictions: pd.DataFrame):
     # Combine the original text DataFrame (file) with the predictions DataFrame
@@ -182,7 +181,7 @@ def download_df(file: pd.DataFrame, predictions: pd.DataFrame):
     result_df.to_csv(download_path)
     print(f"Combined Predictions Downloaded to: {download_path}")
 
-with gr.Blocks() as file_st_demo:
+with gr.Blocks(css="#warning {background-color: red} .feedback {font-size: 74px} .gradio-container {max-width: none;") as file_st_demo:
     with gr.Row():
         with gr.Column():
             st_df = gr.components.DataFrame(label="Short Text")
