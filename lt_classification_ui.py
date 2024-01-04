@@ -88,7 +88,7 @@ def predict(summary):
     elif prediction[0, 2] == 1:
         result = '6 - Contact with objects/equipments'
     else:
-        result = 'Out of topic'
+        result = 'No Label'
 
     return result
 

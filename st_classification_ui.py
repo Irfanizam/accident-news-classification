@@ -91,15 +91,15 @@ def predict(tweet):
         result = '1 - Traffic Incident'
     elif prediction[0, 2] == 1:
         result = '2 - Traffic Info'
-    elif prediction[0, 1] == 1 and prediction[0, 2] == 1:
-        result = '1 - Traffic Incident and 2 - Traffic Info'
-    elif prediction[0, 0] == 1 and prediction[0, 1] == 1:
-        result = '0 - Not Related and 1 - Traffic Incident'
-    elif prediction[0, 0] == 1 and prediction[0, 2] == 1:
-        result = '0 - Not Related and 2 - Traffic Info'
-    elif prediction[0, 1] == 1 and prediction[0, 2] == 1 and prediction[0, 0] == 0:
-        result = '1 - Traffic Incident and 2 - Traffic Info'
-    elif prediction[0, 0] == 0 and prediction[0, 1] == 0 and prediction[0, 2] == 0:
+    # elif prediction[0, 1] == 1 and prediction[0, 2] == 1:
+    #     result = '1 - Traffic Incident and 2 - Traffic Info'
+    # elif prediction[0, 0] == 1 and prediction[0, 1] == 1:
+    #     result = '0 - Not Related and 1 - Traffic Incident'
+    # elif prediction[0, 0] == 1 and prediction[0, 2] == 1:
+    #     result = '0 - Not Related and 2 - Traffic Info'
+    # elif prediction[0, 1] == 1 and prediction[0, 2] == 1 and prediction[0, 0] == 0:
+    #     result = '1 - Traffic Incident and 2 - Traffic Info'
+    # elif prediction[0, 0] == 0 and prediction[0, 1] == 0 and prediction[0, 2] == 0:
         result = 'No Label'
     else:
         result = 'Out of topic'
