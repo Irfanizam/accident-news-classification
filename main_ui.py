@@ -241,81 +241,81 @@ with gr.Blocks() as file_main_demo:
             gr.Markdown("Figures")
 
             with gr.Column():
-                # df = pd.read_csv("Data1/pre_arr_dt_st.csv")
-                # mlb = MultiLabelBinarizer()
-                # labels = mlb.fit_transform(df['relation'].apply(lambda x: [x]))
-                # df_encoded = pd.concat([df['tweet'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
-                # train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
-                # X_train = train_data['tweet']
-                # y_train = np.argmax(train_data.drop('tweet', axis=1).values, axis=1)
-                # X_test = test_data['tweet']
-                # y_test = np.argmax(test_data.drop('tweet', axis=1).values, axis=1)
+                df = pd.read_csv("Data1/pre_arr_dt_st.csv")
+                mlb = MultiLabelBinarizer()
+                labels = mlb.fit_transform(df['relation'].apply(lambda x: [x]))
+                df_encoded = pd.concat([df['tweet'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
+                train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
+                X_train = train_data['tweet']
+                y_train = np.argmax(train_data.drop('tweet', axis=1).values, axis=1)
+                X_test = test_data['tweet']
+                y_test = np.argmax(test_data.drop('tweet', axis=1).values, axis=1)
 
-                # tokenized_tweet = [word_tokenize(tweet.lower()) for tweet in X_train]
-                # train_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_tweet]
-                # X_train_word2vec = np.vstack(train_vectors)
+                tokenized_tweet = [word_tokenize(tweet.lower()) for tweet in X_train]
+                train_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_tweet]
+                X_train_word2vec = np.vstack(train_vectors)
 
-                # svm_model = SVC(kernel='linear')
-                # svm_model.fit(X_train_word2vec, y_train)
+                svm_model = SVC(kernel='linear')
+                svm_model.fit(X_train_word2vec, y_train)
 
-                # tokenized_test_tweet = [word_tokenize(tweet.lower()) for tweet in X_test]
-                # test_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_test_tweet]
-                # X_test_word2vec = np.vstack(test_vectors)
+                tokenized_test_tweet = [word_tokenize(tweet.lower()) for tweet in X_test]
+                test_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_test_tweet]
+                X_test_word2vec = np.vstack(test_vectors)
 
-                # y_pred_test = svm_model.predict(X_test_word2vec)
+                y_pred_test = svm_model.predict(X_test_word2vec)
 
-                # accuracy_test1 = accuracy_score(y_test, y_pred_test)
-                # print(f"Round Test Accuracy: {accuracy_test1}")
-                # sns.countplot(x='relation', data=df, hue='relation')
-                # plt.title('Class Distribution')
-                # plt.savefig(os.path.join(short_text_folder, "class.png"))
-                # plt.close()
+                accuracy_test1 = accuracy_score(y_test, y_pred_test)
+                print(f"Round Test Accuracy: {accuracy_test1}")
+                sns.countplot(x='relation', data=df, hue='relation')
+                plt.title('Class Distribution')
+                plt.savefig(os.path.join(short_text_folder, "class.png"))
+                plt.close()
 
-                # cm = confusion_matrix(y_test, y_pred_test)
-                # sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-                # plt.xlabel('Predicted')
-                # plt.ylabel('True')
-                # plt.title('Confusion Matrix')
-                # plt.savefig(os.path.join(short_text_folder, "cm.png"))
-                # plt.close()
+                cm = confusion_matrix(y_test, y_pred_test)
+                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+                plt.xlabel('Predicted')
+                plt.ylabel('True')
+                plt.title('Confusion Matrix')
+                plt.savefig(os.path.join(short_text_folder, "cm.png"))
+                plt.close()
 
-                # all_tweets_text = ' '.join(df['tweet'])
-                # wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
-                # plt.figure(figsize=(10, 5))
-                # plt.imshow(wordcloud, interpolation="bilinear")
-                # plt.axis('off')
-                # plt.title('Word Cloud')
-                # plt.savefig(os.path.join(short_text_folder, "wordcloud.png"))
-                # plt.close()
+                all_tweets_text = ' '.join(df['tweet'])
+                wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
+                plt.figure(figsize=(10, 5))
+                plt.imshow(wordcloud, interpolation="bilinear")
+                plt.axis('off')
+                plt.title('Word Cloud')
+                plt.savefig(os.path.join(short_text_folder, "wordcloud.png"))
+                plt.close()
 
-                # tweet_lengths = df['tweet'].apply(len)
-                # plt.figure(figsize=(10, 5))
-                # plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
-                # plt.title('Distribution of Tweet Lengths')
-                # plt.xlabel('Tweet Length')
-                # plt.ylabel('Frequency')
-                # plt.savefig(os.path.join(short_text_folder, "wordlength.png"))
-                # plt.close()
+                tweet_lengths = df['tweet'].apply(len)
+                plt.figure(figsize=(10, 5))
+                plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
+                plt.title('Distribution of Tweet Lengths')
+                plt.xlabel('Tweet Length')
+                plt.ylabel('Frequency')
+                plt.savefig(os.path.join(short_text_folder, "wordlength.png"))
+                plt.close()
 
-                # word2vec_model = gensim.models.Word2Vec.load('ShortText/word2vec_model.model')
-                # words = list(word2vec_model.wv.key_to_index.keys())
-                # vectors = [word2vec_model.wv[word] for word in words]
+                word2vec_model = gensim.models.Word2Vec.load('ShortText/word2vec_model.model')
+                words = list(word2vec_model.wv.key_to_index.keys())
+                vectors = [word2vec_model.wv[word] for word in words]
 
-                # top_words = 100
-                # words = words[:top_words]
-                # vectors = vectors[:top_words]
-                # vectors = np.array(vectors)
+                top_words = 100
+                words = words[:top_words]
+                vectors = vectors[:top_words]
+                vectors = np.array(vectors)
 
-                # tsne = TSNE(n_components=2, random_state=42)
-                # vectors_tsne = tsne.fit_transform(vectors)
+                tsne = TSNE(n_components=2, random_state=42)
+                vectors_tsne = tsne.fit_transform(vectors)
 
-                # plt.figure(figsize=(10, 8))
-                # plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
-                # for i, word in enumerate(words):
-                #     plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
-                # plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
-                # plt.savefig(os.path.join(short_text_folder, "TSNE.png"))
-                # plt.close()
+                plt.figure(figsize=(10, 8))
+                plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
+                for i, word in enumerate(words):
+                    plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
+                plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
+                plt.savefig(os.path.join(short_text_folder, "TSNE.png"))
+                plt.close()
 
                 with gr.Blocks():
                     with gr.Row():
@@ -326,8 +326,8 @@ with gr.Blocks() as file_main_demo:
                         img4 = gr.Image("ShortText_Figures/wordlength.png")
                         img5 = gr.Image("ShortText_Figures/TSNE.png")
         
-        # with gr.Row():
-        #     gr.Text(f"Accuracy on Test Data: {accuracy_test1:.2%}")
+        with gr.Row():
+            gr.Text(f"Accuracy on Test Data: {accuracy_test1:.2%}")
 
 
     # Long Text Interface
@@ -336,82 +336,82 @@ with gr.Blocks() as file_main_demo:
             gr.Markdown("Figures")
 
             with gr.Column():
-                # df = pd.read_csv("Data2/pre_arr_dt_lt.csv")
-                # mlb = MultiLabelBinarizer()
-                # labels = mlb.fit_transform(df['tag'].apply(lambda x: [x]))
-                # df_encoded = pd.concat([df['summary'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
-                # train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
-                # X_train = train_data['summary']
-                # y_train = np.argmax(train_data.drop('summary', axis=1).values, axis=1)
-                # X_test = test_data['summary']
-                # y_test = np.argmax(test_data.drop('summary', axis=1).values, axis=1)
+                df = pd.read_csv("Data2/pre_arr_dt_lt.csv")
+                mlb = MultiLabelBinarizer()
+                labels = mlb.fit_transform(df['tag'].apply(lambda x: [x]))
+                df_encoded = pd.concat([df['summary'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
+                train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
+                X_train = train_data['summary']
+                y_train = np.argmax(train_data.drop('summary', axis=1).values, axis=1)
+                X_test = test_data['summary']
+                y_test = np.argmax(test_data.drop('summary', axis=1).values, axis=1)
 
-                # tokenized_summary = [word_tokenize(summary.lower()) for summary in X_train]
-                # train_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_summary]
-                # X_train_word2vec = np.vstack(train_vectors)
+                tokenized_summary = [word_tokenize(summary.lower()) for summary in X_train]
+                train_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_summary]
+                X_train_word2vec = np.vstack(train_vectors)
 
-                # svm_model = SVC(kernel='linear')
-                # svm_model.fit(X_train_word2vec, y_train)
+                svm_model = SVC(kernel='linear')
+                svm_model.fit(X_train_word2vec, y_train)
 
-                # tokenized_test_summary = [word_tokenize(summary.lower()) for summary in X_test]
-                # test_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_test_summary]
-                # X_test_word2vec = np.vstack(test_vectors)
+                tokenized_test_summary = [word_tokenize(summary.lower()) for summary in X_test]
+                test_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_test_summary]
+                X_test_word2vec = np.vstack(test_vectors)
 
-                # y_pred_test = svm_model.predict(X_test_word2vec)
+                y_pred_test = svm_model.predict(X_test_word2vec)
 
-                # accuracy_test2 = accuracy_score(y_test, y_pred_test)
-                # print(f"Round Test Accuracy: {accuracy_test2}")
+                accuracy_test2 = accuracy_score(y_test, y_pred_test)
+                print(f"Round Test Accuracy: {accuracy_test2}")
                 
-                # sns.countplot(x='tag', data=df, hue='tag')
-                # plt.title('Class Distribution')
-                # plt.savefig(os.path.join(long_text_folder, "class.png"))
-                # plt.close()
+                sns.countplot(x='tag', data=df, hue='tag')
+                plt.title('Class Distribution')
+                plt.savefig(os.path.join(long_text_folder, "class.png"))
+                plt.close()
 
-                # cm = confusion_matrix(y_test, y_pred_test)
-                # sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-                # plt.xlabel('Predicted')
-                # plt.ylabel('True')
-                # plt.title('Confusion Matrix')
-                # plt.savefig(os.path.join(long_text_folder, "cm.png"))
-                # plt.close()
+                cm = confusion_matrix(y_test, y_pred_test)
+                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+                plt.xlabel('Predicted')
+                plt.ylabel('True')
+                plt.title('Confusion Matrix')
+                plt.savefig(os.path.join(long_text_folder, "cm.png"))
+                plt.close()
 
-                # all_tweets_text = ' '.join(df['summary'])
-                # wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
-                # plt.figure(figsize=(10, 5))
-                # plt.imshow(wordcloud, interpolation="bilinear")
-                # plt.axis('off')
-                # plt.title('Word Cloud')
-                # plt.savefig(os.path.join(long_text_folder, "wordcloud.png"))
-                # plt.close()
+                all_tweets_text = ' '.join(df['summary'])
+                wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
+                plt.figure(figsize=(10, 5))
+                plt.imshow(wordcloud, interpolation="bilinear")
+                plt.axis('off')
+                plt.title('Word Cloud')
+                plt.savefig(os.path.join(long_text_folder, "wordcloud.png"))
+                plt.close()
 
-                # summary_lengths = df['summary'].apply(len)
-                # plt.figure(figsize=(10, 5))
-                # plt.hist(summary_lengths, bins=50, color='skyblue', edgecolor='black')
-                # plt.title('Distribution of Summary Lengths')
-                # plt.xlabel('Summary Length')
-                # plt.ylabel('Frequency')
-                # plt.savefig(os.path.join(long_text_folder, "wordlength.png"))
-                # plt.close()
+                summary_lengths = df['summary'].apply(len)
+                plt.figure(figsize=(10, 5))
+                plt.hist(summary_lengths, bins=50, color='skyblue', edgecolor='black')
+                plt.title('Distribution of Summary Lengths')
+                plt.xlabel('Summary Length')
+                plt.ylabel('Frequency')
+                plt.savefig(os.path.join(long_text_folder, "wordlength.png"))
+                plt.close()
 
-                # word2vec_model = gensim.models.Word2Vec.load('LongText/word2vec_model.model')
-                # words = list(word2vec_model.wv.key_to_index.keys())
-                # vectors = [word2vec_model.wv[word] for word in words]
+                word2vec_model = gensim.models.Word2Vec.load('LongText/word2vec_model.model')
+                words = list(word2vec_model.wv.key_to_index.keys())
+                vectors = [word2vec_model.wv[word] for word in words]
 
-                # top_words = 100
-                # words = words[:top_words]
-                # vectors = vectors[:top_words]
-                # vectors = np.array(vectors)
+                top_words = 100
+                words = words[:top_words]
+                vectors = vectors[:top_words]
+                vectors = np.array(vectors)
 
-                # tsne = TSNE(n_components=2, random_state=42)
-                # vectors_tsne = tsne.fit_transform(vectors)
+                tsne = TSNE(n_components=2, random_state=42)
+                vectors_tsne = tsne.fit_transform(vectors)
 
-                # plt.figure(figsize=(10, 8))
-                # plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
-                # for i, word in enumerate(words):
-                #     plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
-                # plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
-                # plt.savefig(os.path.join(long_text_folder, "TSNE.png"))
-                # plt.close()
+                plt.figure(figsize=(10, 8))
+                plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
+                for i, word in enumerate(words):
+                    plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
+                plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
+                plt.savefig(os.path.join(long_text_folder, "TSNE.png"))
+                plt.close()
 
                 with gr.Blocks():
                     with gr.Row():
@@ -422,6 +422,6 @@ with gr.Blocks() as file_main_demo:
                         img4 = gr.Image("LongText_Figures/wordlength.png")
                         img5 = gr.Image("LongText_Figures/TSNE.png")
 
-        # with gr.Row():
-        #     gr.Text(f"Accuracy on Test Data: {accuracy_test2:.2%}")
+        with gr.Row():
+            gr.Text(f"Accuracy on Test Data: {accuracy_test2:.2%}")
 
