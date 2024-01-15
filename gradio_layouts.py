@@ -39,7 +39,7 @@ def handle_submit2(file_path: str, text: str) -> tuple:
 with gr.Blocks() as demo:
     with gr.Row():
         with gr.Column():
-            input_shorttext = gr.components.Textbox(label = 'Input short text')
+            input_shorttext = gr.components.Textbox(label = 'Input shorrt text')
             input_shortimage = gr.components.Image(label = 'Input short image', type = 'filepath')
             with gr.Row():
                 submit1 = gr.components.Button(value = 'Submit', variant = 'primary')
