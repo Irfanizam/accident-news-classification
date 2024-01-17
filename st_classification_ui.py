@@ -22,6 +22,7 @@ import joblib
 import gensim.downloader
 from sklearn.manifold import TSNE
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from collections import Counter
 
 
 root_path = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +50,6 @@ def st_predict(tweet, loaded_vectorizer, svm_classifier):
     tokenized_tweet = [word.lower() for word in tweet.split()]
     vectorized_input_data = [average_word_vectors(tokenized_tweet, loaded_vectorizer)]
     predictions = svm_classifier.predict(vectorized_input_data)
-    print(predictions)
 
     if predictions[0] == 0:
         result = '0 - Not A Traffic Incident'
@@ -76,61 +76,57 @@ def st_predict_file(df: pd.DataFrame, loaded_vectorizer, svm_classifier):
     global_predictions = df['tweet'].apply(lambda tweet: st_predict(tweet, loaded_vectorizer, svm_classifier))
     return global_predictions
 
-def st_visualize_file(file_df):
-    df = pd.read_csv("st_predicted_combined.csv")
-    # accuracy_test1 = accuracy_score(y_test, y_pred_test)
-    # print(f"Round Test Accuracy: {accuracy_test1}")
-    # sns.countplot(x='relation', data=df, hue='relation')
-    # plt.title('Class Distribution')
-    # plt.savefig(os.path.join(new_file_folder_st, "class.png"))
-    # img3 = gr.Image("TweetNews_Figures/class.png")
-    # plt.close()
+def st_visualize_file(df):
+    img_dir = os.path.expanduser('~/visualization_images_st')
+    os.makedirs(img_dir, exist_ok=True)
+    df = pd.read_csv('st_predicted_combined.csv')
+    df.columns = ['tweet', 'relation']
+    label_counts = df['relation'].value_counts().rename(index=label_mapping)
+    formatted_output_st = '\n'.join([f"{label}: {count}" for label, count in label_counts.items()])
 
-    all_tweets_text = ' '.join(df['text'])
+    text_column = 'tweet'
+    all_text = ' '.join(df[text_column].astype(str))
+    words = word_tokenize(all_text)
+    word_counts = Counter(words)
+
+    # Find the word with the maximum count
+    max_word_st, max_count_st = max(word_counts.items(), key=lambda x: x[1])
+
+    # Find the word with the minimum count
+    min_word_st, min_count_st = min(word_counts.items(), key=lambda x: x[1])
+
+    # Display word cloud
+    all_tweets_text = ' '.join(df['tweet'])
     wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
     plt.figure(figsize=(10, 5))
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
     plt.title('Word Cloud')
-    plt.savefig(os.path.join(new_file_folder_st, "wordcloud.png"))
-    img1 = gr.Image("TweetNews_Figures_St/wordcloud.png")
+    plt.savefig(os.path.join(img_dir, "wordcloud_st.png"))
     plt.close()
 
-    tweet_lengths = df['text'].apply(len)
+    # Display tweet length distribution
+    tweet_lengths = df['tweet'].apply(len)
     plt.figure(figsize=(10, 5))
     plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
     plt.title('Distribution of Tweet Lengths')
     plt.xlabel('Tweet Length')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(new_file_folder_st, "length.png"))
-    img2 = gr.Image("TweetNews_Figures_St/length.png")
+    plt.savefig(os.path.join(img_dir, "wordlength_st.png"))
     plt.close()
 
-    all_tweets_text = ' '.join(df['text'])
-
-    # Plot bar chart for top 10 most frequent words
-    tokens = word_tokenize(all_tweets_text)
-    word_freq = pd.Series(tokens).value_counts().head(10)
-    plt.figure(figsize=(10, 5))
-    sns.barplot(x=word_freq.values, y=word_freq.index, palette='viridis')
-    plt.title('Top 10 Most Frequent Words')
-    plt.xlabel('Frequency')
-    plt.ylabel('Word')
-    plt.savefig(os.path.join(new_file_folder_st, 'bar.png'))
-    img3 = gr.Image("TweetNews_Figures_St/bar.png")
+    # Display class distribution
+    sns.countplot(x='relation', data=df, hue='relation')
+    plt.title('Class Distribution')
+    plt.savefig(os.path.join(img_dir, "class_st.png"))
     plt.close()
 
-    return img1, img2, img3
+    word_length_img_path_st = os.path.join(img_dir, 'wordlength_st.png')
+    word_cloud_img_path_st = os.path.join(img_dir, 'wordcloud_st.png')
+    class_path_st = os.path.join(img_dir, 'class_st.png')
+
+    return formatted_output_st, max_word_st, max_count_st, min_word_st, min_count_st, word_length_img_path_st, word_cloud_img_path_st, class_path_st
                   
-# queries = [
-#     'rt the entrance ramp dalrymple drive highway west open congestion remains minimal','well said amp i grateful strong efforts expand amp grow american agriculture','cleared traffic congestion manatee highway south beyond exit st east exit highway last updated','nb sb lincoln rd st ave roadway closed due structure fire allegan county randy weits','in weekly address president obama discusses progress made combating climate left','cleared accident eb highway high rise bridge chesapeake'
-# ]
-
-
-# for query in queries:
-#     print(query, predict(query, loaded_vectorizer, svm_classifier))
-#     print()
-
 def visualize_data_st(tweet):
     img_dir = os.path.expanduser('~/visualization_images')
     os.makedirs(img_dir, exist_ok=True)
@@ -143,7 +139,7 @@ def visualize_data_st(tweet):
     plt.title('Distribution of Word Lengths')
     plt.xlabel('Word Length')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(img_dir, 'length.png'))
+    plt.savefig(os.path.join(img_dir, 'word_length_distribution.png'))
 
     # Plot word cloud for most frequent words
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(tweet)
@@ -151,7 +147,7 @@ def visualize_data_st(tweet):
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
     plt.title('Word Cloud for Most Frequent Words')
-    plt.savefig(os.path.join(img_dir, 'wordcloud.png'))
+    plt.savefig(os.path.join(img_dir, 'word_cloud.png'))
 
     # Plot bar chart for top N most frequent words
     tokens = word_tokenize(tweet)
@@ -161,7 +157,7 @@ def visualize_data_st(tweet):
     plt.title('Top 10 Most Frequent Words')
     plt.xlabel('Frequency')
     plt.ylabel('Word')
-    plt.savefig(os.path.join(img_dir, 'bar.png'))
+    plt.savefig(os.path.join(img_dir, 'top_10_words_bar_chart.png'))
 
     # Add more visualizations as needed
 
@@ -173,92 +169,89 @@ def visualize_data_st(tweet):
 
     return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
 
-# # Update your Gradio interface
-# st_demo = gr.Interface(
-#     fn=visualize_data,
-#     inputs=gr.components.Textbox(label='Input Twitter News'),
-#     outputs=[gr.Image(type="pil", label="Word Length Distribution"),
-#              gr.Image(type="pil", label="Word Cloud"),
-#              gr.Image(type="pil", label="Top 10 Words Bar Chart"),
-#              gr.components.Label(label="Text Predictions")],
-#     allow_flagging='never',    
-# )
-
 # Gradio Interface for user input and predictions
 with gr.Blocks() as st_demo:
     with gr.Column():
-        with gr.Column():
-            text_input = gr.Textbox("", type="text", label="Tweet")
-            run_button_text = gr.Button("Label News")
-        with gr.Column():
-            out_text = gr.components.Textbox(label="Predicted News", type="text")
-        with gr.Column():
-            visualize_button = gr.Button("Visualize")
         with gr.Row():
-            out_img = gr.Image(type="pil", label="Word Length Distribution")
-            out_img1 = gr.Image(type="pil", label="Word Cloud")
-            out_img2 = gr.Image(type="pil", label="Top 10 Words Bar Chart")
+            with gr.Column():
+                text_input = gr.Textbox("", type="text", label="Tweet")
+                out_text = gr.components.Textbox(label="Predicted News", type="text")
+            with gr.Column():
+                run_button_text = gr.Button("Label News")
+                visualize_button = gr.Button("Visualize")
+        with gr.Accordion("Data Visualization", open=False):
+            with gr.Row():
+                out_img = gr.Image(type="pil", label="Word Length Distribution")
+                out_img1 = gr.Image(type="pil", label="Word Cloud")
+                out_img2 = gr.Image(type="pil", label="Top 10 Words Bar Chart")
 
     run_button_text.click(lambda tweet: st_predict(tweet, loaded_vectorizer, svm_classifier), inputs=text_input, outputs=out_text)
     visualize_button.click(lambda tweet: visualize_data_st(tweet), inputs=text_input, outputs=[out_img, out_img1, out_img2])
 
-# upload = gr.UploadButton("Click to Upload a File", file_types=["file"])
-# inp_file=gr.components.File(label="Short Text")
 
 def download_df(file: pd.DataFrame, predictions: pd.DataFrame):
     # Combine the original text DataFrame (file) with the predictions DataFrame
     result_df = pd.concat([file.rename(columns={"tweet": "text"}), predictions], axis=1)
     
     download_path = os.path.join(root_path, "st_predicted_combined.csv")
+    # result_df.to_csv(download_path, index=False)
+    # print(f"Combined Predictions Downloaded to: {download_path}")
+    return result_df
+
+def download_df_data(file: pd.DataFrame, predictions: pd.DataFrame):
+    # Combine the original text DataFrame (file) with the predictions DataFrame
+    result_df = pd.concat([file.rename(columns={"tweet": "text"}), predictions], axis=1)
+    
+    download_path = os.path.join(root_path, "st_predicted_combined.csv")
     result_df.to_csv(download_path, index=False)
     print(f"Combined Predictions Downloaded to: {download_path}")
+    gr.Info("File Downloaded")
+    return result_df
+
 
 # Gradio Interface for file upload and predictions
 with gr.Blocks() as file_st_demo:
-    with gr.Column():
-        with gr.Row():
-            st_df = gr.components.DataFrame(label="Twitter News")
-        with gr.Row():
+    with gr.Row():
+        with gr.Column():
+            st_df = gr.components.DataFrame(label="Twitter News", height=200)
+        with gr.Column():
             upload_button = gr.UploadButton("Click to Upload a File", file_types=["csv"])
             run_button = gr.Button("Label News")
-        with gr.Row():
+    with gr.Row():
+        with gr.Column():
             st_df_out = gr.DataFrame(visible=False)
-            out = gr.components.Textbox(label="Predicted News", type="text")
-        with gr.Row():
+            out = gr.components.DataFrame(label="Predicted News Data", height=200)
+        with gr.Column():
             download_button = gr.Button("Download")
+            visualize_button = gr.Button("Visualize")
 
     # Short Text Interface
     with gr.Tab(label="Data Visualization"):
-        with gr.Accordion("Model Analysis"):
-            gr.Markdown("Figures")
-            visualize_button = gr.Button("Visualize")
-            with gr.Column():
-                with gr.Blocks():
+        with gr.Accordion("List of Figures", open=False):
+            with gr.Row():
+                with gr.Column():
+                    label_counts = gr.Textbox(label="Label Counts")
                     with gr.Row():
-                        img1 = gr.Image("TweetNews_Figures_St/wordcloud.png")
-                        img2 = gr.Image("TweetNews_Figures_St/length.png")
-                        img3 = gr.Image("TweetNews_Figures_St/bar.png")
-        
+                        max_word = gr.Textbox(label="Most Frequent Word")
+                        max_count = gr.Textbox(label="Word Count")
+                        min_word = gr.Textbox(label="Least Frequent Word")
+                        min_count = gr.Textbox(label="Word Count")
+                    with gr.Row():
+                        out_img = gr.Image(label="Word Length Distribution")
+                        out_img1 = gr.Image(label="Word Cloud")
+                        out_img2 = gr.Image(label="Class Distribution")
+            
         # with gr.Row():
         #     gr.Text(f"Accuracy on Test Data: {accuracy_test1:.2%}")
 
     # Adjust the lambda functions to call actual functions
     upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=st_df)
-    run_button.click(lambda file_df: st_predict_file(file_df, loaded_vectorizer, svm_classifier), inputs=st_df, outputs=out)
-    download_button.click(lambda file_df: download_df(file_df, global_predictions), inputs=st_df)
-    visualize_button.click(lambda file_df: st_visualize_file(file_df), inputs=st_df, outputs=[img1, img2, img3])
+    # run_button.click(lambda file_df: st_predict_file(file_df, loaded_vectorizer, svm_classifier), inputs=st_df, outputs=out)
+    # Adjust the lambda functions to call actual functions
+    upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=st_df)
 
-# upload = gr.Interface(
-#     fn=lambda filename: pd.read_csv(filename),
-#     inputs=gr.components.File(label="Short Text"),
-#     outputs = st_df,
-#     allow_flagging='never'
-#)
+    run_button.click(lambda file_df: download_df(file_df, st_predict_file(file_df, loaded_vectorizer, svm_classifier)), inputs=st_df, outputs=out)
 
-# file_st_demo = gr.Interface(
-#     fn = predict_file,
-#     inputs = st_df,
-#     outputs = gr.components.Textbox(label="answer", type="text"),
-#     allow_flagging='never'
+    download_button.click(lambda file_df: download_df_data(file_df, global_predictions), inputs=st_df)
 
-# )
+    visualize_button.click(lambda df: st_visualize_file(df), inputs=None, outputs=[label_counts, max_word, max_count, min_word, min_count, out_img, out_img1, out_img2])

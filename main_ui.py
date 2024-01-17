@@ -22,11 +22,14 @@ import gensim.downloader
 import io
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.manifold import TSNE
+from collections import Counter
 
 root_path = os.path.dirname(os.path.abspath(__file__))
-label_mapping = {0: 'Not Related', 1: 'Traffic Incident', 2: 'Traffic Info'}
+# short_text_folder = "ShortText_Figures"
+long_text_folder = "LongText_Figures"
 
-label_mapping = {1: 'Falls,Slips,Trips', 2: 'Expose to Harmful Substance', 3: 'Contact with objects/equipments'}
+# os.makedirs(short_text_folder, exist_ok=True)
+os.makedirs(long_text_folder, exist_ok=True)
 
 # Load the saved SVM classifier
 st_svm_classifier = joblib.load('ShortText/st_svm_model.h5')
@@ -50,378 +53,370 @@ def average_word_vectors(words, model):
         feature_vector = np.divide(feature_vector, nwords)
     return feature_vector
 
-
-def st_predict(tweet, st_loaded_vectorizer, st_svm_classifier):
-    tokenized_tweet = [word.lower() for word in tweet.split()]
-    vectorized_input_data = [average_word_vectors(tokenized_tweet, st_loaded_vectorizer)]
-    predictions = st_svm_classifier.predict(vectorized_input_data)
-    print(predictions)
-
-    if predictions[0] == 0:
-        result = '0 - Not A Traffic Incident'
-    elif predictions[0] == 1:
-        result = '1 - Traffic Incident'
-    elif predictions[0] == 2:
-        result = '2 - Traffic Info'
-    else:
-        result = 'Out of topic'
-
-    return result
-
-def lt_predict(summary, lt_loaded_vectorizer, lt_svm_classifier):
-    tokenized_summary = [word.lower() for word in summary.split()]
-    vectorized_input_data = [average_word_vectors(tokenized_summary, lt_loaded_vectorizer)]
-    predictions = lt_svm_classifier.predict(vectorized_input_data)
-    print(predictions)
-
-    if predictions[0] == 0:
-        result = '1 Falls,Slips,Trips'
-    elif predictions[0] == 1:
-        result = '2 Expose to Harmful Substance'
-    elif predictions[0] == 2:
-        result = '3 Contact with objects/equipments'
-    else:
-        result = 'Out of topic'
-    
-    return result
-
-# Global variable to store predictions
-global_predictions_st = None
-global_predictions_lt = None
-
-def st_predict_file(df: pd.DataFrame, st_loaded_vectorizer, st_svm_classifier):
-    global global_predictions_st
-    global_predictions_st = df['tweet'].apply(lambda tweet: st_predict(tweet, st_loaded_vectorizer, st_svm_classifier))
-    return global_predictions_st
-
-def lt_predict_file(df: pd.DataFrame, lt_loaded_vectorizer, lt_svm_classifier):
-    global global_predictions_lt
-    global_predictions_lt = df['summary'].apply(lambda summary: lt_predict(summary, lt_loaded_vectorizer, lt_svm_classifier))
-    return global_predictions_lt
-
-def visualize_data_st(tweet):
-    img_dir = os.path.expanduser('~/visualization_images')
+def process_and_visualize_data_before_st(df):
+    # Display label counts
+    img_dir = os.path.expanduser('~/visualization_images_main')
     os.makedirs(img_dir, exist_ok=True)
 
+    label_mapping = {0: '0-Not Related', 1: '1-Traffic Incident', 2: '2-Traffic Information'}
+    label_counts = df['relation'].value_counts().rename(index=label_mapping)
+    formatted_output_st = '\n'.join([f"{label}: {count}" for label, count in label_counts.items()])
 
-    # Plot histogram for word lengths
-    word_lengths = [len(word) for word in word_tokenize(tweet)]
-    plt.figure(figsize=(12, 6))
-    plt.hist(word_lengths, bins=20, color='skyblue', edgecolor='black')
-    plt.title('Distribution of Word Lengths')
-    plt.xlabel('Word Length')
-    plt.ylabel('Frequency')
-    plt.savefig(os.path.join(img_dir, 'word_length_distribution.png'))
+    text_column = 'tweet'
+    all_text = ' '.join(df[text_column].astype(str))
+    words = word_tokenize(all_text)
+    word_counts = Counter(words)
 
-    # Plot word cloud for most frequent words
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate(tweet)
+    # Find the word with the maximum count
+    max_word_st, max_count_st = max(word_counts.items(), key=lambda x: x[1])
+
+    # Find the word with the minimum count
+    min_word_st, min_count_st = min(word_counts.items(), key=lambda x: x[1])
+
+    # Display word cloud
+    all_tweets_text = ' '.join(df['tweet'])
+    wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
     plt.figure(figsize=(10, 5))
-    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
-    plt.title('Word Cloud for Most Frequent Words')
-    plt.savefig(os.path.join(img_dir, 'word_cloud.png'))
+    plt.title('Word Cloud')
+    plt.savefig(os.path.join(img_dir, "wordcloud_main_st.png"))
+    plt.close()
 
-    # Plot bar chart for top N most frequent words
-    tokens = word_tokenize(tweet)
-    word_freq = pd.Series(tokens).value_counts().head(10)
+    # Display tweet length distribution
+    tweet_lengths = df['tweet'].apply(len)
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=word_freq.values, y=word_freq.index, palette='viridis')
-    plt.title('Top 10 Most Frequent Words')
-    plt.xlabel('Frequency')
-    plt.ylabel('Word')
-    plt.savefig(os.path.join(img_dir, 'top_10_words_bar_chart.png'))
+    plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
+    plt.title('Distribution of Tweet Lengths')
+    plt.xlabel('Tweet Length')
+    plt.ylabel('Frequency')
+    plt.savefig(os.path.join(img_dir, "wordlength_main_st.png"))
+    plt.close()
 
-    # Add more visualizations as needed
+    # Display class distribution
+    sns.countplot(x='relation', data=df, hue='relation')
+    plt.title('Class Distribution')
+    plt.savefig(os.path.join(img_dir, "class_main_st.png"))
+    plt.close()
 
-    # Save the generated images to the directory
-    word_length_img_path = os.path.join(img_dir, 'word_length_distribution.png')
-    word_cloud_img_path = os.path.join(img_dir, 'word_cloud.png')
-    top_10_words_img_path = os.path.join(img_dir, 'top_10_words_bar_chart.png')
-    prediction = st_predict(tweet, st_loaded_vectorizer, st_svm_classifier)
+    word_length_img_path_main_st = os.path.join(img_dir, 'wordlength_main_st.png')
+    word_cloud_img_path_main_st = os.path.join(img_dir, 'wordcloud_main_st.png')
+    class_path_main_st = os.path.join(img_dir, 'class_main_st.png')
 
-    return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
+    return formatted_output_st, max_word_st, max_count_st, min_word_st, min_count_st, word_length_img_path_main_st, word_cloud_img_path_main_st, class_path_main_st
 
-def visualize_data_lt(summary):
-    img_dir = os.path.expanduser('~/visualization_images')
+def process_and_visualize_data_before_lt(df):
+    # Display label counts
+    img_dir = os.path.expanduser('~/visualization_images_main')
     os.makedirs(img_dir, exist_ok=True)
 
+    label_mapping = {1: '1-Falls,Slips,Trips', 2: '2-Expose to Harmful Substance', 3: '3-Contact with objects/equipments'}
+    label_counts = df['tag'].value_counts().rename(index=label_mapping)
+    formatted_output_lt = '\n'.join([f"{label}: {count}" for label, count in label_counts.items()])
 
-    # Plot histogram for word lengths
-    word_lengths = [len(word) for word in word_tokenize(summary)]
-    plt.figure(figsize=(12, 6))
-    plt.hist(word_lengths, bins=20, color='skyblue', edgecolor='black')
-    plt.title('Distribution of Word Lengths')
-    plt.xlabel('Word Length')
-    plt.ylabel('Frequency')
-    plt.savefig(os.path.join(img_dir, 'word_length_distribution.png'))
+    text_column = 'summary'
+    all_text = ' '.join(df[text_column].astype(str))
+    words = word_tokenize(all_text)
+    word_counts = Counter(words)
 
-    # Plot word cloud for most frequent words
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate(summary)
+    # Find the word with the maximum count
+    max_word_lt, max_count_lt = max(word_counts.items(), key=lambda x: x[1])
+
+    # Find the word with the minimum count
+    min_word_lt, min_count_lt = min(word_counts.items(), key=lambda x: x[1])
+
+    # Display word cloud
+    all_summary_text = ' '.join(df['summary'])
+    wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_summary_text)
     plt.figure(figsize=(10, 5))
-    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
-    plt.title('Word Cloud for Most Frequent Words')
-    plt.savefig(os.path.join(img_dir, 'word_cloud.png'))
+    plt.title('Word Cloud')
+    plt.savefig(os.path.join(img_dir, "wordcloud_main_lt.png"))
+    plt.close()
 
-    # Plot bar chart for top N most frequent words
-    tokens = word_tokenize(summary)
-    word_freq = pd.Series(tokens).value_counts().head(10)
+    # Display summary length distribution
+    tweet_lengths = df['summary'].apply(len)
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=word_freq.values, y=word_freq.index, palette='viridis')
-    plt.title('Top 10 Most Frequent Words')
-    plt.xlabel('Frequency')
-    plt.ylabel('Word')
-    plt.savefig(os.path.join(img_dir, 'top_10_words_bar_chart.png'))
+    plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
+    plt.title('Distribution of Web News Lengths')
+    plt.xlabel('Summary Length')
+    plt.ylabel('Frequency')
+    plt.savefig(os.path.join(img_dir, "wordlength_main_lt.png"))
+    plt.close()
 
-    # Add more visualizations as needed
+    # Display class distribution
+    sns.countplot(x='tag', data=df, hue='tag')
+    plt.title('Class Distribution')
+    plt.savefig(os.path.join(img_dir, "class_main_lt.png"))
+    plt.close()
 
-    # Save the generated images to the directory
-    word_length_img_path = os.path.join(img_dir, 'word_length_distribution.png')
-    word_cloud_img_path = os.path.join(img_dir, 'word_cloud.png')
-    top_10_words_img_path = os.path.join(img_dir, 'top_10_words_bar_chart.png')
-    prediction = lt_predict(summary, lt_loaded_vectorizer, lt_svm_classifier)
+    word_length_img_path_main_lt = os.path.join(img_dir, 'wordlength_main_lt.png')
+    word_cloud_img_path_main_lt = os.path.join(img_dir, 'wordcloud_main_lt.png')
+    class_path_main_lt = os.path.join(img_dir, 'class_main_lt.png')
 
-    return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
+    return formatted_output_lt, max_word_lt, max_count_lt, min_word_lt, min_count_lt, word_length_img_path_main_lt, word_cloud_img_path_main_lt, class_path_main_lt
 
-# Update your Gradio interface
-st_demo_main = gr.Interface(
-    fn=visualize_data_st,
-    inputs=gr.components.Textbox(label='Input short text'),
-    outputs=[gr.Image(type="pil", label="Word Length Distribution"),
-             gr.Image(type="pil", label="Word Cloud"),
-             gr.Image(type="pil", label="Top 10 Words Bar Chart"),
-             gr.components.Label(label="Text Predictions")],
-    allow_flagging='never',    
-)
+def st_train_and_evaluate_model(df):
+    mlb = MultiLabelBinarizer()
+    labels = mlb.fit_transform(df['relation'].apply(lambda x: [x]))
+    df_encoded = pd.concat([df['tweet'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
+    train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
+    X_train = train_data['tweet']
+    y_train = np.argmax(train_data.drop('tweet', axis=1).values, axis=1)
+    X_test = test_data['tweet']
+    y_test = np.argmax(test_data.drop('tweet', axis=1).values, axis=1)
+    tokenized_tweet = [word_tokenize(tweet.lower()) for tweet in X_train]
+    train_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_tweet]
+    X_train_word2vec = np.vstack(train_vectors)
 
-lt_demo_main = gr.Interface(
-    fn=visualize_data_lt,
-    inputs=gr.components.Textbox(label='Input long text'),
-    outputs=[gr.Image(type="pil", label="Word Length Distribution"),
-             gr.Image(type="pil", label="Word Cloud"),
-             gr.Image(type="pil", label="Top 10 Words Bar Chart"),
-             gr.components.Label(label="Text Predictions")],
-    allow_flagging='never'
-)
+    svm_model = SVC(kernel='linear')
+    svm_model.fit(X_train_word2vec, y_train)
 
-# upload = gr.UploadButton("Click to Upload a File", file_types=["file"])
-# inp_file=gr.components.File(label="Short Text")
+    tokenized_test_tweet = [word_tokenize(tweet.lower()) for tweet in X_test]
+    test_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_test_tweet]
+    X_test_word2vec = np.vstack(test_vectors)
 
-def st_download_df(file: pd.DataFrame, predictions: pd.DataFrame):
-    # Combine the original text DataFrame (file) with the predictions DataFrame
-    result_df = pd.concat([file, predictions], axis=1)
+    y_pred_test = svm_model.predict(X_test_word2vec)
+
+    accuracy_test = accuracy_score(y_test, y_pred_test)
+    from sklearn.metrics import precision_recall_fscore_support
+    # Assuming y_test and y_pred_test are your true labels and predicted labels, respectively
+    precision, recall, f1_score, _ = precision_recall_fscore_support(y_test, y_pred_test, average='weighted')
     
-    download_path = os.path.join(root_path, "st_predicted_combined.csv")
-    result_df.to_csv(download_path)
-    print(f"Combined Predictions Downloaded to: {download_path}")
+    return {
+        'f1_score': f1_score,
+        'accuracy': accuracy_test,
+        'y_test': y_test,
+        'y_pred_test': y_pred_test,
+        'test_data': test_data  # Add this line to return the test_data
+    }
 
+def lt_train_and_evaluate_model(df):
+    mlb = MultiLabelBinarizer()
+    labels = mlb.fit_transform(df['tag'].apply(lambda x: [x]))
+    df_encoded = pd.concat([df['summary'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
+    train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
+    X_train = train_data['summary']
+    y_train = np.argmax(train_data.drop('summary', axis=1).values, axis=1)
+    X_test = test_data['summary']
+    y_test = np.argmax(test_data.drop('summary', axis=1).values, axis=1)
+    tokenized_summary = [word_tokenize(summary.lower()) for summary in X_train]
+    train_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_summary]
+    X_train_word2vec = np.vstack(train_vectors)
 
-def lt_download_df(file: pd.DataFrame, predictions: pd.DataFrame):
-    # Combine the original text DataFrame (file) with the predictions DataFrame
-    result_df = pd.concat([file, predictions], axis=1)
-    
-    download_path = os.path.join(root_path, "lt_predicted_combined.csv")
-    result_df.to_csv(download_path)
-    print(f"Combined Predictions Downloaded to: {download_path}")
+    svm_model = SVC(kernel='linear')
+    svm_model.fit(X_train_word2vec, y_train)
 
+    tokenized_test_summary = [word_tokenize(summary.lower()) for summary in X_test]
+    test_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_test_summary]
+    X_test_word2vec = np.vstack(test_vectors)
 
-# Define separate folders for short text and long text interfaces
-short_text_folder = "ShortText_Figures"
-long_text_folder = "LongText_Figures"
+    y_pred_test = svm_model.predict(X_test_word2vec)
 
-# Ensure the folders exist, create them if not
-os.makedirs(short_text_folder, exist_ok=True)
-os.makedirs(long_text_folder, exist_ok=True)
+    accuracy_test = accuracy_score(y_test, y_pred_test)
+    from sklearn.metrics import precision_recall_fscore_support
+    # Assuming y_test and y_pred_test are your true labels and predicted labels, respectively
+    precision, recall, f1_score, _ = precision_recall_fscore_support(y_test, y_pred_test, average='weighted')
 
-# Gradio Interface for file upload and predictions
+    return {
+        'f1_score': f1_score,
+        'accuracy': accuracy_test,
+        'y_test': y_test,
+        'y_pred_test': y_pred_test,
+        'test_data': test_data  # Add this line to return the test_data
+    }
+
 with gr.Blocks() as file_main_demo:
-    # Short Text Interface
-    with gr.Tab(label="Tweet News"):
-        with gr.Accordion("Model Analysis"):
-            gr.Markdown("Figures")
-
-            with gr.Column():
-                df = pd.read_csv("Data1/pre_arr_dt_st.csv")
-                mlb = MultiLabelBinarizer()
-                labels = mlb.fit_transform(df['relation'].apply(lambda x: [x]))
-                df_encoded = pd.concat([df['tweet'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
-                train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
-                X_train = train_data['tweet']
-                y_train = np.argmax(train_data.drop('tweet', axis=1).values, axis=1)
-                X_test = test_data['tweet']
-                y_test = np.argmax(test_data.drop('tweet', axis=1).values, axis=1)
-
-                tokenized_tweet = [word_tokenize(tweet.lower()) for tweet in X_train]
-                train_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_tweet]
-                X_train_word2vec = np.vstack(train_vectors)
-
-                svm_model = SVC(kernel='linear')
-                svm_model.fit(X_train_word2vec, y_train)
-
-                tokenized_test_tweet = [word_tokenize(tweet.lower()) for tweet in X_test]
-                test_vectors = [average_word_vectors(tweet, st_loaded_vectorizer) for tweet in tokenized_test_tweet]
-                X_test_word2vec = np.vstack(test_vectors)
-
-                y_pred_test = svm_model.predict(X_test_word2vec)
-
-                accuracy_test1 = accuracy_score(y_test, y_pred_test)
-                print(f"Round Test Accuracy: {accuracy_test1}")
-                sns.countplot(x='relation', data=df, hue='relation')
-                plt.title('Class Distribution')
-                plt.savefig(os.path.join(short_text_folder, "class.png"))
-                plt.close()
-
-                cm = confusion_matrix(y_test, y_pred_test)
-                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-                plt.xlabel('Predicted')
-                plt.ylabel('True')
-                plt.title('Confusion Matrix')
-                plt.savefig(os.path.join(short_text_folder, "cm.png"))
-                plt.close()
-
-                all_tweets_text = ' '.join(df['tweet'])
-                wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
-                plt.figure(figsize=(10, 5))
-                plt.imshow(wordcloud, interpolation="bilinear")
-                plt.axis('off')
-                plt.title('Word Cloud')
-                plt.savefig(os.path.join(short_text_folder, "wordcloud.png"))
-                plt.close()
-
-                tweet_lengths = df['tweet'].apply(len)
-                plt.figure(figsize=(10, 5))
-                plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
-                plt.title('Distribution of Tweet Lengths')
-                plt.xlabel('Tweet Length')
-                plt.ylabel('Frequency')
-                plt.savefig(os.path.join(short_text_folder, "wordlength.png"))
-                plt.close()
-
-                word2vec_model = gensim.models.Word2Vec.load('ShortText/word2vec_model.model')
-                words = list(word2vec_model.wv.key_to_index.keys())
-                vectors = [word2vec_model.wv[word] for word in words]
-
-                top_words = 100
-                words = words[:top_words]
-                vectors = vectors[:top_words]
-                vectors = np.array(vectors)
-
-                tsne = TSNE(n_components=2, random_state=42)
-                vectors_tsne = tsne.fit_transform(vectors)
-
-                plt.figure(figsize=(10, 8))
-                plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
-                for i, word in enumerate(words):
-                    plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
-                plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
-                plt.savefig(os.path.join(short_text_folder, "TSNE.png"))
-                plt.close()
-
-                with gr.Blocks():
+    with gr.Tab(label="Twitter News"):
+        with gr.Column():
+            with gr.Accordion("Data Preload and Evaluation", open=False):
+                with gr.Column():
                     with gr.Row():
-                        img1 = gr.Image("ShortText_Figures/cm.png")
-                        img2 = gr.Image("ShortText_Figures/wordcloud.png")
-                        img3 = gr.Image("ShortText_Figures/class.png")
+                        with gr.Column():
+                            st_df = gr.components.DataFrame(label="Twitter News", height=200)
+                        with gr.Column():
+                            upload_button = gr.UploadButton("Upload Data", file_types=["csv"])
+                            button_before = gr.Button("Process Data")
+                with gr.Accordion("Analysis Before Training", open=False):
                     with gr.Row():
-                        img4 = gr.Image("ShortText_Figures/wordlength.png")
-                        img5 = gr.Image("ShortText_Figures/TSNE.png")
-        
-        with gr.Row():
-            gr.Text(f"Accuracy on Test Data: {accuracy_test1:.2%}")
+                        with gr.Column():
+                            label_counts = gr.Textbox(label="Label Counts")
+                            with gr.Row():
+                                max_word = gr.Textbox(label="Most Frequent Word")
+                                max_count = gr.Textbox(label="Word Count")
+                                min_word = gr.Textbox(label="Least Frequent Word")
+                                min_count = gr.Textbox(label="Word Count")
+                            with gr.Row():
+                                out_img = gr.Image(label="Word Length Distribution")
+                                out_img1 = gr.Image(label="Word Cloud")
+                                out_img2 = gr.Image(label="Class Distribution")
+            with gr.Accordion("Model Training and Evaluation", open=False):
+                with gr.Column():
+                    with gr.Row():
+                        with gr.Column():
+                            out1 = gr.components.Textbox(label="F1 Score", type="text")
+                            out2 = gr.components.Textbox(label="Model Accuracy", type="text")
+                        with gr.Column():
+                            with gr.Column():
+                                button_train = gr.Button("Train Model")
+                                out_test_data = gr.components.DataFrame(label="Test Data", height=200)
+                with gr.Accordion("Analysis After Training", open=False):
+                    with gr.Row():
+                        outim3 = gr.Image(label="Confusion Matrix")
+                        outim4 = gr.Image(label="TSNE for Word2Vec Embedding")
 
+    upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=st_df)
+    button_before.click(lambda df: process_and_visualize_data_before_st(df), inputs=st_df, outputs=[label_counts, max_word, max_count, min_word, min_count, out_img, out_img1, out_img2])
+    button_train.click(lambda file_df: st_train_model(file_df), inputs=[st_df], outputs=[out1, out2, outim3, outim4, out_test_data])
 
-    # Long Text Interface
     with gr.Tab(label="Web News"):
-        with gr.Accordion("Model Analysis"):
-            gr.Markdown("Figures")
-
-            with gr.Column():
-                df = pd.read_csv("Data2/pre_arr_dt_lt.csv")
-                mlb = MultiLabelBinarizer()
-                labels = mlb.fit_transform(df['tag'].apply(lambda x: [x]))
-                df_encoded = pd.concat([df['summary'], pd.DataFrame(labels, columns=mlb.classes_)], axis=1)
-                train_data, test_data = train_test_split(df_encoded, test_size=0.2, random_state=42)
-                X_train = train_data['summary']
-                y_train = np.argmax(train_data.drop('summary', axis=1).values, axis=1)
-                X_test = test_data['summary']
-                y_test = np.argmax(test_data.drop('summary', axis=1).values, axis=1)
-
-                tokenized_summary = [word_tokenize(summary.lower()) for summary in X_train]
-                train_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_summary]
-                X_train_word2vec = np.vstack(train_vectors)
-
-                svm_model = SVC(kernel='linear')
-                svm_model.fit(X_train_word2vec, y_train)
-
-                tokenized_test_summary = [word_tokenize(summary.lower()) for summary in X_test]
-                test_vectors = [average_word_vectors(summary, lt_loaded_vectorizer) for summary in tokenized_test_summary]
-                X_test_word2vec = np.vstack(test_vectors)
-
-                y_pred_test = svm_model.predict(X_test_word2vec)
-
-                accuracy_test2 = accuracy_score(y_test, y_pred_test)
-                print(f"Round Test Accuracy: {accuracy_test2}")
-                
-                sns.countplot(x='tag', data=df, hue='tag')
-                plt.title('Class Distribution')
-                plt.savefig(os.path.join(long_text_folder, "class.png"))
-                plt.close()
-
-                cm = confusion_matrix(y_test, y_pred_test)
-                sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-                plt.xlabel('Predicted')
-                plt.ylabel('True')
-                plt.title('Confusion Matrix')
-                plt.savefig(os.path.join(long_text_folder, "cm.png"))
-                plt.close()
-
-                all_tweets_text = ' '.join(df['summary'])
-                wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
-                plt.figure(figsize=(10, 5))
-                plt.imshow(wordcloud, interpolation="bilinear")
-                plt.axis('off')
-                plt.title('Word Cloud')
-                plt.savefig(os.path.join(long_text_folder, "wordcloud.png"))
-                plt.close()
-
-                summary_lengths = df['summary'].apply(len)
-                plt.figure(figsize=(10, 5))
-                plt.hist(summary_lengths, bins=50, color='skyblue', edgecolor='black')
-                plt.title('Distribution of Summary Lengths')
-                plt.xlabel('Summary Length')
-                plt.ylabel('Frequency')
-                plt.savefig(os.path.join(long_text_folder, "wordlength.png"))
-                plt.close()
-
-                word2vec_model = gensim.models.Word2Vec.load('LongText/word2vec_model.model')
-                words = list(word2vec_model.wv.key_to_index.keys())
-                vectors = [word2vec_model.wv[word] for word in words]
-
-                top_words = 100
-                words = words[:top_words]
-                vectors = vectors[:top_words]
-                vectors = np.array(vectors)
-
-                tsne = TSNE(n_components=2, random_state=42)
-                vectors_tsne = tsne.fit_transform(vectors)
-
-                plt.figure(figsize=(10, 8))
-                plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
-                for i, word in enumerate(words):
-                    plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
-                plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
-                plt.savefig(os.path.join(long_text_folder, "TSNE.png"))
-                plt.close()
-
-                with gr.Blocks():
+        with gr.Column():
+            with gr.Accordion("Data Preload and Evaluation", open=False):
+                with gr.Column():
                     with gr.Row():
-                        img1 = gr.Image("LongText_Figures/cm.png")
-                        img2 = gr.Image("LongText_Figures/wordcloud.png")
-                        img3 = gr.Image("LongText_Figures/class.png")
+                        with gr.Column():
+                            lt_df = gr.components.DataFrame(label="Web News", height=200)
+                        with gr.Column():
+                            upload_button = gr.UploadButton("Upload Data", file_types=["csv"])
+                            button_before = gr.Button("Process Data")
+                with gr.Accordion("Analysis Before Training", open=False):
                     with gr.Row():
-                        img4 = gr.Image("LongText_Figures/wordlength.png")
-                        img5 = gr.Image("LongText_Figures/TSNE.png")
+                        with gr.Column():
+                            label_counts = gr.Textbox(label="Label Counts")
+                            with gr.Row():
+                                max_word = gr.Textbox(label="Most Frequent Word")
+                                max_count = gr.Textbox(label="Word Count")
+                                min_word = gr.Textbox(label="Least Frequent Word")
+                                min_count = gr.Textbox(label="Word Count")
+                            with gr.Row():
+                                out_img = gr.Image(label="Word Length Distribution")
+                                out_img1 = gr.Image(label="Word Cloud")
+                                out_img2 = gr.Image(label="Class Distribution")
+            with gr.Accordion("Model Training and Evaluation", open=False):
+                with gr.Column():
+                    with gr.Row():
+                        with gr.Column():
+                            out1 = gr.components.Textbox(label="F1 Score", type="text")
+                            out2 = gr.components.Textbox(label="Model Accuracy", type="text")
+                        with gr.Column():
+                            with gr.Column():
+                                button_train = gr.Button("Train Model")
+                                out_test_data = gr.components.DataFrame(label="Test Data", height=200)
+                with gr.Accordion("Analysis After Training", open=False):
+                    with gr.Row():
+                        outim3 = gr.Image(label="Confusion Matrix")
+                        outim4 = gr.Image(label="TSNE for Word2Vec Embedding")
 
-        with gr.Row():
-            gr.Text(f"Accuracy on Test Data: {accuracy_test2:.2%}")
+    upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=lt_df)
+    button_before.click(lambda df: process_and_visualize_data_before_lt(df), inputs=lt_df, outputs=[label_counts, max_word, max_count, min_word, min_count, out_img, out_img1, out_img2])
+    button_train.click(lambda file_df: lt_train_model(file_df), inputs=[lt_df], outputs=[out1, out2, outim3, outim4, out_test_data])
+
+def st_train_model(file_df):
+    results = st_train_and_evaluate_model(file_df)
+    f1_score = results['f1_score']
+    accuracy_test = results['accuracy']
+    y_test = results['y_test']
+    y_pred_test = results['y_pred_test']
+    test_data = results['test_data']
+
+    acc_percent = round(accuracy_test, 4)
+    acc_per = acc_percent * 100
+    acc_per_str = str(acc_per) + "%"
+
+    f1_percent = round(f1_score, 4)
+    f1_per = f1_percent * 100
+    f1_per_str = str(f1_per) + "%"
+
+
+    img_dir = os.path.expanduser('~/visualization_images_main')
+    os.makedirs(img_dir, exist_ok=True)
+    
+    cm = confusion_matrix(y_test, y_pred_test)
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.savefig(os.path.join(img_dir, "cm_main_st.png"))
+    plt.close()
+
+    word2vec_model = gensim.models.Word2Vec.load('ShortText/word2vec_model.model')
+    words = list(word2vec_model.wv.key_to_index.keys())
+    vectors = [word2vec_model.wv[word] for word in words]
+
+    top_words = 100
+    words = words[:top_words]
+    vectors = vectors[:top_words]
+    vectors = np.array(vectors)
+
+    tsne = TSNE(n_components=2, random_state=42)
+    vectors_tsne = tsne.fit_transform(vectors)
+
+    plt.figure(figsize=(10, 8))
+    plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
+    for i, word in enumerate(words):
+        plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
+    plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
+    plt.savefig(os.path.join(img_dir, "TSNE_main_st.png"))
+    plt.close()
+
+    cm_main_st_path = os.path.join(img_dir, 'cm_main_st.png')
+    tsne_main_st_path = os.path.join(img_dir, 'TSNE_main_st.png')
+    test_data.columns = ['tweet', '0-Not Related', '1-Traffic Incident', '2-Traffic Infos']
+
+    return f1_per_str, acc_per_str, cm_main_st_path, tsne_main_st_path, test_data
+
+def lt_train_model(file_df):
+    results = lt_train_and_evaluate_model(file_df)
+    f1_score = results['f1_score']
+    accuracy_test = results['accuracy']
+    y_test = results['y_test']
+    y_pred_test = results['y_pred_test']
+    test_data = results['test_data']
+
+    acc_percent = round(accuracy_test, 4)
+    acc_per = acc_percent * 100
+    acc_per_str = str(acc_per) + "%"
+
+    f1_percent = round(f1_score, 4)
+    f1_per = f1_percent * 100
+    f1_per_str = str(f1_per) + "%"
+
+
+    img_dir = os.path.expanduser('~/visualization_images_main')
+    os.makedirs(img_dir, exist_ok=True)
+    
+    cm = confusion_matrix(y_test, y_pred_test)
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.title('Confusion Matrix')
+    plt.savefig(os.path.join(img_dir, "cm_main_lt.png"))
+    plt.close()
+
+    word2vec_model = gensim.models.Word2Vec.load('LongText/word2vec_model.model')
+    words = list(word2vec_model.wv.key_to_index.keys())
+    vectors = [word2vec_model.wv[word] for word in words]
+
+    top_words = 100
+    words = words[:top_words]
+    vectors = vectors[:top_words]
+    vectors = np.array(vectors)
+
+    tsne = TSNE(n_components=2, random_state=42)
+    vectors_tsne = tsne.fit_transform(vectors)
+
+    plt.figure(figsize=(10, 8))
+    plt.scatter(vectors_tsne[:, 0], vectors_tsne[:, 1], marker='.')
+    for i, word in enumerate(words):
+        plt.annotate(word, xy=(vectors_tsne[i, 0], vectors_tsne[i, 1]), fontsize=8)
+    plt.title('t-SNE Visualization of Top 100 Word2Vec Embeddings')
+    plt.savefig(os.path.join(img_dir, "TSNE_main_lt.png"))
+    plt.close()
+
+    cm_main_lt_path = os.path.join(img_dir, 'cm_main_lt.png')
+    tsne_main_lt_path = os.path.join(img_dir, 'TSNE_main_lt.png')
+    test_data.columns = ['summary', '1-Falls,Slips,Trips', '2-Expose to Harmful Substance', '3-Contact with objects/equipments']
+
+    return f1_per_str, acc_per_str, cm_main_lt_path, tsne_main_lt_path, test_data
 

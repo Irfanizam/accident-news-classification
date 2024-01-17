@@ -19,6 +19,7 @@ from wordcloud import WordCloud
 import seaborn as sns
 import tempfile
 import joblib
+from collections import Counter
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 label_mapping = {1: 'Falls,Slips,Trips', 2: 'Expose to Harmful Substance', 3: 'Contact with objects/equipments'}
@@ -44,7 +45,6 @@ def lt_predict(summary, model, classifier):
     tokenized_summary = [word.lower() for word in summary.split()]
     vectorized_input_data = [average_word_vectors(tokenized_summary, model)]
     predictions = classifier.predict(vectorized_input_data)
-    print(predictions)
 
     if predictions[0] == 0:
         result = '1 Falls,Slips,Trips'
@@ -71,59 +71,56 @@ def lt_predict_file(df: pd.DataFrame, loaded_vectorizer, svm_classifier):
     return global_predictions
 
 def lt_visualize_file(file_df):
-    df = pd.read_csv("lt_predicted_combined.csv")
-    # accuracy_test1 = accuracy_score(y_test, y_pred_test)
-    # print(f"Round Test Accuracy: {accuracy_test1}")
-    # sns.countplot(x='relation', data=df, hue='relation')
-    # plt.title('Class Distribution')
-    # plt.savefig(os.path.join(new_file_folder_st, "class.png"))
-    # img3 = gr.Image("TweetNews_Figures/class.png")
-    # plt.close()
+    img_dir = os.path.expanduser('~/visualization_images_lt')
+    os.makedirs(img_dir, exist_ok=True)
+    df = pd.read_csv('lt_predicted_combined.csv')
+    df.columns = ['summary', 'tag']
+    label_counts = df['tag'].value_counts().rename(index=label_mapping)
+    formatted_output_lt = '\n'.join([f"{label}: {count}" for label, count in label_counts.items()])
 
-    all_tweets_text = ' '.join(df['text'])
+    text_column = 'summary'
+    all_text = ' '.join(df[text_column].astype(str))
+    words = word_tokenize(all_text)
+    word_counts = Counter(words)
+
+    # Find the word with the maximum count
+    max_word_lt, max_count_lt = max(word_counts.items(), key=lambda x: x[1])
+
+    # Find the word with the minimum count
+    min_word_lt, min_count_lt = min(word_counts.items(), key=lambda x: x[1])
+
+    # Display word cloud
+    all_tweets_text = ' '.join(df['summary'])
     wordcloud = WordCloud(width=800, height=400, random_state=21, max_font_size=110).generate(all_tweets_text)
     plt.figure(figsize=(10, 5))
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
     plt.title('Word Cloud')
-    plt.savefig(os.path.join(new_file_folder_lt, "wordcloud.png"))
-    img1 = gr.Image("TweetNews_Figures_Lt/wordcloud.png")
+    plt.savefig(os.path.join(img_dir, "wordcloud_lt.png"))
     plt.close()
 
-    tweet_lengths = df['text'].apply(len)
+    # Display tweet length distribution
+    tweet_lengths = df['summary'].apply(len)
     plt.figure(figsize=(10, 5))
     plt.hist(tweet_lengths, bins=50, color='skyblue', edgecolor='black')
     plt.title('Distribution of Tweet Lengths')
     plt.xlabel('Tweet Length')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(new_file_folder_lt, "length.png"))
-    img2 = gr.Image("TweetNews_Figures_Lt/length.png")
+    plt.savefig(os.path.join(img_dir, "wordlength_lt.png"))
     plt.close()
 
-    all_tweets_text = ' '.join(df['text'])
-
-    # Plot bar chart for top 10 most frequent words
-    tokens = word_tokenize(all_tweets_text)
-    word_freq = pd.Series(tokens).value_counts().head(10)
-    plt.figure(figsize=(10, 5))
-    sns.barplot(x=word_freq.values, y=word_freq.index, palette='viridis')
-    plt.title('Top 10 Most Frequent Words')
-    plt.xlabel('Frequency')
-    plt.ylabel('Word')
-    plt.savefig(os.path.join(new_file_folder_lt, 'bar.png'))
-    img3 = gr.Image("TweetNews_Figures_Lt/bar.png")
+    # Display class distribution
+    sns.countplot(x='tag', data=df, hue='tag')
+    plt.title('Class Distribution')
+    plt.savefig(os.path.join(img_dir, "class_lt.png"))
     plt.close()
 
-    return img1, img2, img3
+    word_length_img_path_lt = os.path.join(img_dir, 'wordlength_lt.png')
+    word_cloud_img_path_lt = os.path.join(img_dir, 'wordcloud_lt.png')
+    class_path_lt = os.path.join(img_dir, 'class_lt.png')
 
-# queries = [
-#     'a team dredging employees changing line hoist drum employee pants leg became caught hoist line pulled around hoist drum employee sustained fatal injuries died within next minutes','at approximately december employee mechanic working number boiler house unit second employer the second employer refiner petroleum products employee attempting step open drain sump contained hot substance degrees fahrenheit when attempted step open sump stepped immersed right leg lower thigh employee received burns right leg hospitalized seven days','a power line worker mounting l bracket crossarm utility pole the bracket going hold cutout new transformer as employee tightening two top bolts bracket contacted power line neck he electrocuted','on february employee coworker installing metal decking onto steel beams skylight lobby area towson town center mall this serve containment subsequent asbestos removal employee fell approximately ft steel beams concrete floor he hospitalized university maryland shock trauma center fractured skull fractured nose fractured arms the investigation revealed employee wearing fall protection equipment time accident the coworker returned ground level via scissors lift see caused employee fall'
-# ]
+    return formatted_output_lt, max_word_lt, max_count_lt, min_word_lt, min_count_lt, word_length_img_path_lt, word_cloud_img_path_lt, class_path_lt
 
-
-# for query in queries:
-#     print(query, predict(query, loaded_vectorizer, svm_classifier))
-#     print()
 
 def visualize_data_lt(summary):
     img_dir = os.path.expanduser('~/visualization_images')
@@ -167,30 +164,21 @@ def visualize_data_lt(summary):
 
     return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
 
-# lt_demo = gr.Interface(
-#     fn=visualize_data_lt,
-#     inputs=gr.components.Textbox(label='Input Web News'),
-#     outputs=[gr.Image(type="pil", label="Word Length Distribution"),
-#              gr.Image(type="pil", label="Word Cloud"),
-#              gr.Image(type="pil", label="Top 10 Words Bar Chart"),
-#              gr.components.Label(label="Text Predictions")],
-#     allow_flagging='never'
-# )
-
 # Gradio Interface for user input and predictions
 with gr.Blocks() as lt_demo:
     with gr.Column():
-        with gr.Column():
-            text_input = gr.Textbox("", type="text", label="Summary")
-            run_button_text = gr.Button("Label News")
-        with gr.Column():
-            out_text = gr.components.Textbox(label="Predicted News", type="text")
-        with gr.Column():
-            visualize_button = gr.Button("Visualize")
         with gr.Row():
-            out_img = gr.Image(type="pil", label="Word Length Distribution")
-            out_img1 = gr.Image(type="pil", label="Word Cloud")
-            out_img2 = gr.Image(type="pil", label="Top 10 Words Bar Chart")
+            with gr.Column():
+                text_input = gr.Textbox("", type="text", label="Summary")
+                out_text = gr.components.Textbox(label="Predicted News", type="text")
+            with gr.Column():
+                run_button_text = gr.Button("Label News")
+                visualize_button = gr.Button("Visualize")
+        with gr.Accordion("Data Visualization", open=False):
+            with gr.Row():
+                out_img = gr.Image(type="pil", label="Word Length Distribution")
+                out_img1 = gr.Image(type="pil", label="Word Cloud")
+                out_img2 = gr.Image(type="pil", label="Top 10 Words Bar Chart")
 
     run_button_text.click(lambda summary: lt_predict(summary, loaded_vectorizer, svm_classifier), inputs=text_input, outputs=out_text)
     visualize_button.click(lambda summary: visualize_data_lt(summary), inputs=text_input, outputs=[out_img, out_img1, out_img2])
@@ -200,46 +188,59 @@ def download_df(file: pd.DataFrame, predictions: pd.DataFrame):
     result_df = pd.concat([file.rename(columns={"summary": "text"}), predictions], axis=1)
     
     download_path = os.path.join(root_path, "lt_predicted_combined.csv")
+    # result_df.to_csv(download_path, index=False)
+    # print(f"Combined Predictions Downloaded to: {download_path}")
+    return result_df
+
+def download_df_data(file: pd.DataFrame, predictions: pd.DataFrame):
+    # Combine the original text DataFrame (file) with the predictions DataFrame
+    result_df = pd.concat([file.rename(columns={"summary": "text"}), predictions], axis=1)
+    
+    download_path = os.path.join(root_path, "lt_predicted_combined.csv")
     result_df.to_csv(download_path, index=False)
     print(f"Combined Predictions Downloaded to: {download_path}")
+    gr.Info("File Downloaded")
+    return result_df
 
 # Gradio Interface for file upload and predictions
 with gr.Blocks() as file_lt_demo:
-    with gr.Column():
-        with gr.Row():
-            lt_df = gr.components.DataFrame(label="Web News")
-        with gr.Row():
+    with gr.Row():
+        with gr.Column():
+            lt_df = gr.components.DataFrame(label="Web News", height=200)
+        with gr.Column():
             upload_button = gr.UploadButton("Click to Upload a File", file_types=["csv"])
             run_button = gr.Button("Label News")
-        with gr.Row():
-            # Replace file_out with st_df
+    with gr.Row():
+        with gr.Column():
             lt_df_out = gr.DataFrame(visible=False)
-            out = gr.components.Textbox(label="Predicted News", type="text")
-        with gr.Row():
+            out = gr.components.DataFrame(label="Predicted News Data", height=200)
+        with gr.Column():
             download_button = gr.Button("Download")
+            visualize_button = gr.Button("Visualize")
     # Long Text Interface
     with gr.Tab(label="Data Visualization"):
-        with gr.Accordion("Model Analysis"):
-            gr.Markdown("Figures")
-            visualize_button = gr.Button("Visualize")
-            with gr.Column():
-                with gr.Blocks():
+        with gr.Accordion("List of Figures", open=False):
+            with gr.Row():
+                with gr.Column():
+                    label_counts = gr.Textbox(label="Label Counts")
                     with gr.Row():
-                        img1 = gr.Image("TweetNews_Figures_Lt/wordcloud.png")
-                        img2 = gr.Image("TweetNews_Figures_Lt/length.png")
-                        img3 = gr.Image("TweetNews_Figures_Lt/bar.png")
+                        max_word = gr.Textbox(label="Most Frequent Word")
+                        max_count = gr.Textbox(label="Word Count")
+                        min_word = gr.Textbox(label="Least Frequent Word")
+                        min_count = gr.Textbox(label="Word Count")
+                    with gr.Row():
+                        out_img = gr.Image(label="Word Length Distribution")
+                        out_img1 = gr.Image(label="Word Cloud")
+                        out_img2 = gr.Image(label="Class Distribution")
 
-     # Adjust the lambda functions to call actual functions
+    # Adjust the lambda functions to call actual functions
     upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=lt_df)
-    run_button.click(lambda file_df: lt_predict_file(file_df, loaded_vectorizer, svm_classifier), inputs=lt_df, outputs=out)
-    download_button.click(lambda file_df: download_df(file_df, global_predictions), inputs=lt_df)
-    visualize_button.click(lambda file_df: lt_visualize_file(file_df), inputs=lt_df, outputs=[img1, img2, img3])
+    # run_button.click(lambda file_df: st_predict_file(file_df, loaded_vectorizer, svm_classifier), inputs=st_df, outputs=out)
+    # Adjust the lambda functions to call actual functions
+    upload_button.upload(lambda file_path: pd.read_csv(file_path), inputs=upload_button, outputs=lt_df)
 
+    run_button.click(lambda file_df: download_df(file_df, lt_predict_file(file_df, loaded_vectorizer, svm_classifier)), inputs=lt_df, outputs=out)
 
-# file_lt_demo = gr.Interface(
-#     fn = predict_file,
-#     inputs = gr.components.File(label="Long Text"),
-#     outputs = gr.components.Textbox(label="answer", type="text"),
-#     allow_flagging='never'
-# 
-# )
+    download_button.click(lambda file_df: download_df_data(file_df, global_predictions), inputs=lt_df)
+
+    visualize_button.click(lambda df: lt_visualize_file(df), inputs=None, outputs=[label_counts, max_word, max_count, min_word, min_count, out_img, out_img1, out_img2])
