@@ -21,11 +21,10 @@ implementation_tabbed = gr.TabbedInterface(
 
 fullapp = gr.TabbedInterface([demo_tabbed, implementation_tabbed], ["Model Demonstration", "Implementation"])
 
-@app.get('/')
-def home():
-    return 'Gradio is running on /gradio', 200
+# @app.get('/')
+# def home():
+#     return 'Gradio is running on /gradio', 200
 
-app = gr.mount_gradio_app(app, fullapp, '/gradio')
+# app = gr.mount_gradio_app(app, fullapp, '/gradio')
 
-# Run the FastAPI app
-# uvicorn run:app --reload
+fullapp.launch(share=True)
