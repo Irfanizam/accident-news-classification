@@ -77,8 +77,8 @@ def st_predict_file(df: pd.DataFrame, loaded_vectorizer, svm_classifier):
     return global_predictions
 
 def st_visualize_file(df):
-    img_dir = os.path.expanduser('~/visualization_images_st')
-    os.makedirs(img_dir, exist_ok=True)
+    img_dir_st = os.path.expanduser('~/visualization_images_st')
+    os.makedirs(img_dir_st, exist_ok=True)
     df = pd.read_csv('st_predicted_combined.csv')
     df.columns = ['tweet', 'relation']
     label_counts = df['relation'].value_counts().rename(index=label_mapping)
@@ -102,7 +102,7 @@ def st_visualize_file(df):
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
     plt.title('Word Cloud')
-    plt.savefig(os.path.join(img_dir, "wordcloud_st.png"))
+    plt.savefig(os.path.join(img_dir_st, "wordcloud_st.png"))
     plt.close()
 
     # Display tweet length distribution
@@ -112,18 +112,18 @@ def st_visualize_file(df):
     plt.title('Distribution of Tweet Lengths')
     plt.xlabel('Tweet Length')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(img_dir, "wordlength_st.png"))
+    plt.savefig(os.path.join(img_dir_st, "wordlength_st.png"))
     plt.close()
 
     # Display class distribution
     sns.countplot(x='relation', data=df, hue='relation')
     plt.title('Class Distribution')
-    plt.savefig(os.path.join(img_dir, "class_st.png"))
+    plt.savefig(os.path.join(img_dir_st, "class_st.png"))
     plt.close()
 
-    word_length_img_path_st = os.path.join(img_dir, 'wordlength_st.png')
-    word_cloud_img_path_st = os.path.join(img_dir, 'wordcloud_st.png')
-    class_path_st = os.path.join(img_dir, 'class_st.png')
+    word_length_img_path_st = os.path.join(img_dir_st, 'wordlength_st.png')
+    word_cloud_img_path_st = os.path.join(img_dir_st, 'wordcloud_st.png')
+    class_path_st = os.path.join(img_dir_st, 'class_st.png')
 
     return formatted_output_st, max_word_st, max_count_st, min_word_st, min_count_st, word_length_img_path_st, word_cloud_img_path_st, class_path_st
                   

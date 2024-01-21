@@ -77,7 +77,7 @@ def lt_visualize_file(file_df):
     df.columns = ['summary', 'tag']
     label_counts = df['tag'].value_counts().rename(index=label_mapping)
     formatted_output_lt = '\n'.join([f"{label}: {count}" for label, count in label_counts.items()])
-
+    print(df)
     text_column = 'summary'
     all_text = ' '.join(df[text_column].astype(str))
     words = word_tokenize(all_text)
@@ -123,8 +123,8 @@ def lt_visualize_file(file_df):
 
 
 def visualize_data_lt(summary):
-    img_dir = os.path.expanduser('~/visualization_images')
-    os.makedirs(img_dir, exist_ok=True)
+    img_dir_lt = os.path.expanduser('~/visualization_images')
+    os.makedirs(img_dir_lt, exist_ok=True)
 
 
     # Plot histogram for word lengths
@@ -134,7 +134,7 @@ def visualize_data_lt(summary):
     plt.title('Distribution of Word Lengths')
     plt.xlabel('Word Length')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(img_dir, 'word_length_distribution.png'))
+    plt.savefig(os.path.join(img_dir_lt, 'word_length_distribution.png'))
 
     # Plot word cloud for most frequent words
     wordcloud = WordCloud(width=800, height=400, background_color='white').generate(summary)
@@ -142,7 +142,7 @@ def visualize_data_lt(summary):
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
     plt.title('Word Cloud for Most Frequent Words')
-    plt.savefig(os.path.join(img_dir, 'word_cloud.png'))
+    plt.savefig(os.path.join(img_dir_lt, 'word_cloud.png'))
 
     # Plot bar chart for top N most frequent words
     tokens = word_tokenize(summary)
@@ -152,14 +152,14 @@ def visualize_data_lt(summary):
     plt.title('Top 10 Most Frequent Words')
     plt.xlabel('Frequency')
     plt.ylabel('Word')
-    plt.savefig(os.path.join(img_dir, 'top_10_words_bar_chart.png'))
+    plt.savefig(os.path.join(img_dir_lt, 'top_10_words_bar_chart.png'))
 
     # Add more visualizations as needed
 
     # Save the generated images to the directory
-    word_length_img_path = os.path.join(img_dir, 'word_length_distribution.png')
-    word_cloud_img_path = os.path.join(img_dir, 'word_cloud.png')
-    top_10_words_img_path = os.path.join(img_dir, 'top_10_words_bar_chart.png')
+    word_length_img_path = os.path.join(img_dir_lt, 'word_length_distribution.png')
+    word_cloud_img_path = os.path.join(img_dir_lt, 'word_cloud.png')
+    top_10_words_img_path = os.path.join(img_dir_lt, 'top_10_words_bar_chart.png')
     prediction = lt_predict(summary, loaded_vectorizer, svm_classifier)
 
     return word_length_img_path, word_cloud_img_path, top_10_words_img_path, prediction
